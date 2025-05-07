@@ -210,7 +210,13 @@ Eigen::Vector3d NDT2D::match(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const Ei
     pcl::PointCloud<pcl::PointXYZ>::Ptr aligned(new pcl::PointCloud<pcl::PointXYZ>());
     ndt.setInputSource(filtered_cloud);
     ndt.align(*aligned, init_guess);
-    
+        
+    // Check for convergence
+    if (!ndt.hasConverged()) {
+        std::cerr << "NDT alignment did not converge!" << std::endl;
+        return Eigen::Vector3d::Zero(); // Return an invalid/default transformation
+    }
+   
     // 結果の変換行列から2D位置を抽出
     Eigen::Matrix4f transform = ndt.getFinalTransformation();
     
