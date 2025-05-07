@@ -35,12 +35,16 @@ TEST_F(NDTPreprocessingTest, DownsamplePointCloud) {
     EXPECT_LT(filtered_cloud->points.size(), cloud->points.size());
     EXPECT_GT(filtered_cloud->points.size(), 0);
     
-    // Check that points are spaced at least 0.2 units apart
-    for (size_t i = 1; i < filtered_cloud->points.size(); ++i) {
-        float dx = filtered_cloud->points[i].x - filtered_cloud->points[i-1].x;
-        float dy = filtered_cloud->points[i].y - filtered_cloud->points[i-1].y;
-        float distance = std::sqrt(dx*dx + dy*dy);
-        EXPECT_GE(distance, 0.15);  // Allow slight variation due to filtering algorithm
+    // Use a k-d tree to verify spatial proximity
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(filtered_cloud);
+    for (size_t i = 0; i < filtered_cloud->points.size(); ++i) {
+        std::vector<int> pointIdxRadiusSearch;
+        std::vector<float> pointRadiusSquaredDistance;
+        // Search for neighbors within a radius of 0.15
+        if (kdtree.radiusSearch(filtered_cloud->points[i], 0.15, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 1) {
+            ADD_FAILURE() << "Point " << i << " has neighbors closer than 0.15 units.";
+        }
     }
 }
 
