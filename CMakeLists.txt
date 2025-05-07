@@ -13,6 +13,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PCL REQUIRED)
@@ -21,6 +22,8 @@ find_package(PCL REQUIRED)
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
+  ${pcl_conversions_INCLUDE_DIRS}
+  ${nav_msgs_INCLUDE_DIRS}
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -43,6 +46,7 @@ ament_target_dependencies(ndt_localization_node
   geometry_msgs
   tf2
   tf2_ros
+  tf2_geometry_msgs
   nav2_util
   pcl_conversions
 )
@@ -59,5 +63,49 @@ install(TARGETS
 install(DIRECTORY include/
 DESTINATION include/
 )
+
+# Testing
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  
+  # Unit tests
+  ament_add_gtest(test_scan_matching
+    test/unit/test_scan_matching.cpp
+  )
+  target_link_libraries(test_scan_matching ndt_2d ${PCL_LIBRARIES})
+  
+  ament_add_gtest(test_ndt_preprocessing
+    test/unit/test_ndt_preprocessing.cpp
+  )
+  target_link_libraries(test_ndt_preprocessing ndt_2d ${PCL_LIBRARIES})
+  
+  ament_add_gtest(test_map_management
+    test/unit/test_map_management.cpp
+  )
+  target_link_libraries(test_map_management ndt_2d ${PCL_LIBRARIES})
+  
+  # Integration tests
+  ament_add_gtest(test_ndt_integration
+    test/integration/test_ndt_integration.cpp
+  )
+  target_include_directories(test_ndt_integration PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+  target_link_libraries(test_ndt_integration ndt_2d ${PCL_LIBRARIES})
+  ament_target_dependencies(test_ndt_integration
+    rclcpp
+    sensor_msgs
+    geometry_msgs
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
+  )
+  
+  # Performance tests
+  ament_add_gtest(test_ndt_performance
+    test/performance/test_ndt_performance.cpp
+  )
+  target_link_libraries(test_ndt_performance ndt_2d ${PCL_LIBRARIES})
+endif()
 
 ament_package()
